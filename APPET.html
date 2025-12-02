@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Applet Método de Euler - PVI de Primer Orden</title>
+  <style>
+  body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    /* Fondo más llamativo */
+    background:
+      radial-gradient(circle at 0% 0%, rgba(56, 189, 248, 0.25), transparent 55%),
+      radial-gradient(circle at 100% 100%, rgba(251, 146, 60, 0.25), transparent 55%),
+      linear-gradient(135deg, #020617, #0f172a);
+  }
+
+  .container {
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(10px);
+    border-radius: 18px;
+    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.35);
+    padding: 20px 24px;
+    max-width: 980px;
+    width: 100%;
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 20px;
+  }
+
+  h1 {
+    margin-top: 0;
+    font-size: 1.4rem;
+    margin-bottom: 8px;
+  }
+
+  .subtitle {
+    font-size: 0.85rem;
+    color: #555;
+    margin-bottom: 18px;
+  }
+
+  label {
+    font-size: 0.85rem;
+    display: block;
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+
+  select, input[type="number"], input[type="range"] {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 6px 8px;
+    border-radius: 10px;
+    border: 1px solid #d0d0d7;
+    font-size: 0.9rem;
+    outline: none;
+    background: #f9fafb;
+  }
+
+  select:focus, input[type="number"]:focus, input[type="range"]:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.3);
+    background: #ffffff;
+  }
+
+  .panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .field {
+    margin-bottom: 8px;
+  }
+
+  .small-row {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 8px;
+    align-items: center;
+  }
+
+  #canvasWrapper {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #fafafa;
+    border: 1px solid #e0e0e0;
+  }
+
+  #plotCanvas {
+    display: block;
+  }
+
+  .hint {
+    font-size: 0.8rem;
+    color: #666;
+    margin-top: 8px;
+    line-height: 1.4;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.75rem;
+    background: #e0ecff;
+    color: #1d4ed8;
+    border-radius: 999px;
+    padding: 3px 8px;
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+
+  .legend {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+    font-size: 0.8rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .legend-line {
+    width: 18px;
+    height: 2px;
+    background: #2563eb;
+    border-radius: 999px;
+  }
+
+  .legend-point {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid #dc2626;
+    background: #ffffff;
+  }
+
+  @media (max-width: 900px) {
+    .container {
+      grid-template-columns: 1fr;
+      margin: 16px;
+    }
+  }
+</style>
+
+</head>
+<body>
+  <div class="container">
+    <div class="panel">
+      <div>
+        <h1>Método de Euler para PVI de primer orden</h1>
+        <div class="subtitle">
+          Selecciona un problema, ajusta el tamaño de paso y arrastra el punto inicial para explorar la solución aproximada.
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="problemSelect">Problema de valor inicial (PVI)</label>
+        <select id="problemSelect">
+          <option value="0">1) y' = y ,  y(0) = 1</option>
+          <option value="1">2) y' = -2y + x ,  y(0) = 0</option>
+          <option value="2">3) y' = x·y ,  y(0) = 1</option>
+          <option value="3">4) y' = cos(x) - y ,  y(0) = 0</option>
+          <option value="4">5) y' = y(1 - y) ,  y(0) = 0.5</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="stepRange">Tamaño de paso h</label>
+        <div class="small-row">
+          <input type="range" id="stepRange" min="0.05" max="1" step="0.05" value="0.2">
+          <input type="number" id="stepInput" min="0.05" max="1" step="0.05" value="0.2">
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="badge">Interacción</span>
+        <div class="hint">
+          • Haz clic y arrastra el punto rojo para mover el punto inicial.<br>
+          • La curva verde discontinua muestra la solución analítica del PVI.<br>
+          • El plano muestra la aproximación de Euler en la región: −5 ≤ x ≤ 5, −5 ≤ y ≤ 5.
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div id="canvasWrapper">
+        <canvas id="plotCanvas" width="640" height="420"></canvas>
+      </div>
+      <div class="legend">
+        <div class="legend-item">
+          <div class="legend-line"></div> Curva aproximada (Euler)
+        </div>
+        <div class="legend-item">
+          <div class="legend-line" style="background:#16a34a; border-bottom:1px dashed #16a34a;"></div> Solución exacta
+        </div>
+        <div class="legend-item">
+          <div class="legend-point"></div> Punto inicial (arrastrable)
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const problems = [
+      {
+        desc: "y' = y,  y(0)=1",
+        f: (x, y) => y,
+        x0: 0,
+        y0: 1
+      },
+      {
+        desc: "y' = -2y + x,  y(0)=0",
+        f: (x, y) => -2 * y + x,
+        x0: 0,
+        y0: 0
+      },
+      {
+        desc: "y' = x·y,  y(0)=1",
+        f: (x, y) => x * y,
+        x0: 0,
+        y0: 1
+      },
+      {
+        desc: "y' = cos(x) - y,  y(0)=0",
+        f: (x, y) => Math.cos(x) - y,
+        x0: 0,
+        y0: 0
+      },
+      {
+        desc: "y' = y(1 - y),  y(0)=0.5",
+        f: (x, y) => y * (1 - y),
+        x0: 0,
+        y0: 0.5
+      }
+    ];
+
+
+    const analyticSolutions = [
+    (x, x0, y0) => y0 * Math.exp(x - x0),
+
+
+    (x, x0, y0) => {
+        const C = y0 - (x0 / 2 - 0.25);
+        return C * Math.exp(-2 * (x - x0)) + x / 2 - 0.25;
+    },
+
+
+    (x, x0, y0) => y0 * Math.exp(0.5 * (x * x - x0 * x0)),
+
+
+    (x, x0, y0) => {
+        const C = y0 - 0.5 * (Math.sin(x0) + Math.cos(x0));
+        return C * Math.exp(x0 - x) + 0.5 * (Math.sin(x) + Math.cos(x));
+    },
+
+
+    (x, x0, y0) => {
+        if (Math.abs(y0) < 1e-9) return 0;
+        if (Math.abs(y0 - 1) < 1e-9) return 1;
+
+        const K = Math.exp(x0) * (1 - y0) / y0;
+        return 1 / (1 + K * Math.exp(-x));
+    }
+    ];
+
+
+    const xMin = -5, xMax = 5;
+    const yMin = -5, yMax = 5;
+
+    const canvas = document.getElementById("plotCanvas");
+    const ctx = canvas.getContext("2d");
+    const problemSelect = document.getElementById("problemSelect");
+    const stepRange = document.getElementById("stepRange");
+    const stepInput = document.getElementById("stepInput");
+
+    let currentProblemIndex = 0;
+    let stepSize = parseFloat(stepRange.value);
+    let x0 = problems[0].x0;
+    let y0 = problems[0].y0;
+
+    let dragging = false;
+    const dragRadius = 0.3;
+
+    function worldToCanvas(x, y) {
+      const width = canvas.width;
+      const height = canvas.height;
+      const px = (x - xMin) / (xMax - xMin) * width;
+      const py = height - (y - yMin) / (yMax - yMin) * height;
+      return { px, py };
+    }
+
+    function canvasToWorld(px, py) {
+      const width = canvas.width;
+      const height = canvas.height;
+      const x = xMin + (px / width) * (xMax - xMin);
+      const y = yMax - (py / height) * (yMax - yMin);
+      return { x, y };
+    }
+
+    function eulerApprox(f, x0, y0, h) {
+      const maxSteps = 2000;
+      const points = [];
+
+      
+      let x = x0;
+      let y = y0;
+      points.push({ x, y });
+
+      let steps = 0;
+      while (x < xMax && steps < maxSteps) {
+        const k = f(x, y);
+        const x1 = x + h;
+        const y1 = y + h * k;
+        if (x1 > xMax || y1 < yMin - 10 || y1 > yMax + 10 || !isFinite(y1)) break;
+        x = x1;
+        y = y1;
+        points.push({ x, y });
+        steps++;
+      }
+
+      x = x0;
+      y = y0;
+      const backPoints = [];
+      steps = 0;
+      while (x > xMin && steps < maxSteps) {
+        const k = f(x, y);
+        const x1 = x - h;
+        const y1 = y - h * k;
+        if (x1 < xMin || y1 < yMin - 10 || y1 > yMax + 10 || !isFinite(y1)) break;
+        x = x1;
+        y = y1;
+        backPoints.push({ x, y });
+        steps++;
+      }
+
+      backPoints.reverse();
+      return backPoints.concat(points);
+    }
+
+    function drawAxesAndGrid() {
+      const width = canvas.width;
+      const height = canvas.height;
+
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = "#fafafa";
+      ctx.fillRect(0, 0, width, height);
+
+      ctx.strokeStyle = "#e5e7eb";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let x = Math.ceil(xMin); x <= xMax; x++) {
+        const { px } = worldToCanvas(x, 0);
+        ctx.moveTo(px, 0);
+        ctx.lineTo(px, height);
+      }
+      for (let y = Math.ceil(yMin); y <= yMax; y++) {
+        const { py } = worldToCanvas(0, y);
+        ctx.moveTo(0, py);
+        ctx.lineTo(width, py);
+      }
+      ctx.stroke();
+
+      ctx.strokeStyle = "#111827";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      if (yMin < 0 && yMax > 0) {
+        const { py } = worldToCanvas(0, 0);
+        ctx.moveTo(0, py);
+        ctx.lineTo(width, py);
+      }
+      if (xMin < 0 && xMax > 0) {
+        const { px } = worldToCanvas(0, 0);
+        ctx.moveTo(px, 0);
+        ctx.lineTo(px, height);
+      }
+      ctx.stroke();
+
+      ctx.fillStyle = "#4b5563";
+      ctx.font = "10px system-ui";
+      for (let x = Math.ceil(xMin); x <= xMax; x++) {
+        if (x === 0) continue;
+        const { px, py } = worldToCanvas(x, 0);
+        ctx.fillText(x.toString(), px - 3, py + 10);
+      }
+      for (let y = Math.ceil(yMin); y <= yMax; y++) {
+        if (y === 0) continue;
+        const { px, py } = worldToCanvas(0, y);
+        ctx.fillText(y.toString(), px + 4, py + 3);
+      }
+    }
+
+function draw() {
+  const { f } = problems[currentProblemIndex];
+  const analytic = analyticSolutions[currentProblemIndex];
+  const h = stepSize;
+
+  drawAxesAndGrid();
+
+  const analyticPoints = [];
+  const dx = 0.02;
+  for (let x = xMin; x <= xMax; x += dx) {
+    const y = analytic(x, x0, y0);
+    if (!isFinite(y)) continue;
+    if (y < yMin - 10 || y > yMax + 10) continue;
+    analyticPoints.push({ x, y });
+  }
+
+  if (analyticPoints.length > 1) {
+    ctx.beginPath();
+    for (let i = 0; i < analyticPoints.length; i++) {
+      const { px, py } = worldToCanvas(analyticPoints[i].x, analyticPoints[i].y);
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.strokeStyle = "#16a34a";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  const points = eulerApprox(f, x0, y0, h);
+  if (points.length > 1) {
+    ctx.beginPath();
+    for (let i = 0; i < points.length; i++) {
+      const { px, py } = worldToCanvas(points[i].x, points[i].y);
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.strokeStyle = "#2563eb";
+    ctx.lineWidth = 1.8;
+    ctx.setLineDash([6, 4]); 
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = "#2563eb";
+    for (let i = 0; i < points.length; i++) {
+      const { px, py } = worldToCanvas(points[i].x, points[i].y);
+      ctx.beginPath();
+      ctx.arc(px, py, 3, 0, 2 * Math.PI);
+      ctx.fill();
+    }
+  }
+
+  const { px, py } = worldToCanvas(x0, y0);
+  ctx.beginPath();
+  ctx.arc(px, py, 6, 0, 2 * Math.PI);
+  ctx.fillStyle = "#ffffff";
+  ctx.fill();
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = "#dc2626";
+  ctx.stroke();
+}
+
+
+
+    problemSelect.addEventListener("change", () => {
+      currentProblemIndex = parseInt(problemSelect.value, 10);
+      const p = problems[currentProblemIndex];
+      x0 = p.x0;
+      y0 = p.y0;
+      draw();
+    });
+
+    stepRange.addEventListener("input", () => {
+      stepSize = parseFloat(stepRange.value);
+      stepInput.value = stepSize.toFixed(2);
+      draw();
+    });
+
+    stepInput.addEventListener("change", () => {
+      let val = parseFloat(stepInput.value);
+      if (isNaN(val)) val = 0.2;
+      val = Math.max(0.05, Math.min(1, val));
+      stepSize = val;
+      stepRange.value = val;
+      stepInput.value = val.toFixed(2);
+      draw();
+    });
+
+    canvas.addEventListener("mousedown", (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const px = e.clientX - rect.left;
+      const py = e.clientY - rect.top;
+      const w = canvasToWorld(px, py);
+
+      const dx = w.x - x0;
+      const dy = w.y - y0;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist <= dragRadius) {
+        dragging = true;
+      }
+    });
+
+    canvas.addEventListener("mousemove", (e) => {
+      if (!dragging) return;
+      const rect = canvas.getBoundingClientRect();
+      const px = e.clientX - rect.left;
+      const py = e.clientY - rect.top;
+      let { x, y } = canvasToWorld(px, py);
+
+      x = Math.max(xMin, Math.min(xMax, x));
+      y = Math.max(yMin, Math.min(yMax, y));
+
+      x0 = x;
+      y0 = y;
+      draw();
+    });
+
+    canvas.addEventListener("mouseup", () => {
+      dragging = false;
+    });
+
+    canvas.addEventListener("mouseleave", () => {
+      dragging = false;
+    });
+
+    draw();
+  </script>
+</body>
+</html>
